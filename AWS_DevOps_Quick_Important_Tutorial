@@ -21,7 +21,23 @@ Security
 	3. Add Out-Bound Rule.
 	
 
------- EC2 Provisioning-Windows Machinces --------------		
+------ EC2 Provisioning-Windows Machinces --------------	
+	1. Select service EC2
+	2. Go To Instances
+	3. Launch Instance.
+	4. Choose Choose an Amazon Machine Image (AMI) as per requirement, Here 'Microsoft Windows Server 2019 Base - ami-08db69d5de9dc9245'
+	5. Go Choose Instance Type Tab and Choose CPU Free tier eligible.
+	6. Go to Configure Instance, Choose VPC and Public subnet created in pre-requisite step and Enable Public IP to be provision.
+	7. Go to add Add Storage and choose as per requirement, Here, Going with default.
+	5. Add Tags is caption.
+	6. Configure Security Group, Select the security group as your security to be imposed, Here, choosing existing created in pre-prequisite step.
+	7. Review and Click on Launch.
+	8. Create Key Pair and decrypt the password.
+	Now, wait for 2 minutes till VM gets ready....
+	Click on View Instances...
+	9. Now, select VM and click on Connect and download RDP
+	10. Run the RDP file and provided the decrypted password.
+	
 	
 ------ EC2 Provisioning-Linux Machinces --------------
 	Provison Linux Machine
