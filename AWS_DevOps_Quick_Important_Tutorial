@@ -1,0 +1,79 @@
+------ Pre-requisite to Provisioning EC2 Machinces --------------	
+VPC(Virtual Private Cloud)
+	1. Create VPC (192.168.0.0/16)->Choose CIDR ipv4
+	2. Create Subnet Public (192.168.1.0/24) and Private (192.168.2.0/24)
+	3. Create Public and Private Route Table, attach public and private subnet correspondingly.
+	4. Create And Associate Internet Gateway to VPC.
+	6. So Open Public route table and guide public subnet traffic to internet gateway.
+	
+
+Security
+	NACL is subnet level security
+	1. Create Public and Private Network NACL
+	2. Add Inboud Traffic Rule in NACL
+	3. Add Outbound traffic Rule in NACL.
+		
+	
+	Security Groups:
+	Instance level security is enabled by security group
+	1. Create Public and Private Security Groups
+	2. Add In-Bound Rule
+	3. Add Out-Bound Rule.
+	
+
+------ EC2 Provisioning-Windows Machinces --------------		
+	
+------ EC2 Provisioning-Linux Machinces --------------
+	Provison Linux Machine
+	Install webserver like Apache n all on linux server to access machine via browser.
+
+	#!bin/bash
+	cd
+	sudo su
+	apt-get update -y
+	apt-get install apache2 git -y
+	cd /var/www/html/
+	git clone https://github.com/rampravesh0808/WebAppHtml.git
+	
+	
+	Linux EC2 Machine accessible via SSH, so need Putty
+	Putty Software
+	PuttyZen Software
+	
+	----------- DevOps-Continous Integration using JENKINS ---------------------
+	
+	--- Install Jenkins-----
+	1. Download Jenkins 'Generic Java Packaage (.war)'
+	2. Copy at working location as installation file.
+	3. Open Command prompt and run the below command to start jenkins
+		java -jar jenkins.war --httpPort=9090
+		
+	4. Open localhost on port and enter admin password
+		like 6ebb6f190e994635a3beacaec2566603
+		
+	5. Install suggested plugins.
+	
+	6. Create Admin Users
+	
+	---- Create Job in Jenkins for Maven Project------
+	1. Create Job -> Free Style Project 
+	2. Go Tab General -> Source Code Managment -> Git
+	3. Copy Git URL https://github.com/rampravesh0808/WebAppMaven.git
+	4. Add Credentials for 1st time.
+	5. Go To Build and choose Invoke top-level Maven Targets
+		Type command : clean install
+		
+	6. Save the job
+	
+	---Manually Copy the Jar file to AWS bucket S3---
+	7. Make sure installed aws CLI, open Command Prompt and run below command
+	8. aws s3 cp my-app-1.0-SNAPSHOT.jar s3://kram-s3-us-east2/my-app-1.0-SNAPSHOT.jar
+	
+	---JENKINS build the jar and Copy the Jar file to AWS bucket S3 automatically------
+	9. Now, Go to Jenkins and open Maven project->Configure->Buil Tab -> Execute Windows Batch Command and type below -
+		cd C:\Users\Etisalat\.jenkins\workspace\AWS-WebAppMaven\target\
+		aws s3 cp my-app-1.0-SNAPSHOT.jar s3://kram-s3/my-app-1.0-SNAPSHOT.jar
+		
+	10. Apply->Save and Run the build. 
+		You will find jar file will be uploaded to AWS S3 storage.
+
