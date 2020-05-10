@@ -93,3 +93,297 @@ Security
 	10. Apply->Save and Run the build. 
 		You will find jar file will be uploaded to AWS S3 storage.
 
+
+
+
+----------- AWS and DevOps-DevOps-Learning about Configuration Managment Tools- Chef -----------
+
+1. Provision 3 EC2 machine using Ubuntu AMI
+2. Userdata
+	#!bin/bash
+	cd
+	sudo su
+	apt-get update -y
+
+
+3. Login to hosted cheaf
+	https://manage.chef.io/
+
+   	a) Go to Administrator Tab
+	b) Select Organization name
+	c) Click on Started KIT and downlaod the same.
+
+
+4. Copy chef repo downloaded folder at workspace.
+
+5. Download chef dk and installation and set the path.
+	https://downloads.chef.io/chefdk/
+
+	Open cmd and check below command
+	chef --version
+	knife --version
+
+
+6. Generate web cookbook
+	chef generate cookbooks cookbooks/web
+
+	Go to google and search receipe 'coockbooks for apache2 ubuntu'
+	Ref: https://www.linode.com/docs/applications/configuration-management/creating-your-first-chef-cookbook/
+
+	Copy following code and paste into recepie file.
+	
+		package "php" do
+		  action :install
+		end
+
+		package "php-pear" do
+		  action :install
+		end
+
+		package "php-mysql" do
+		  action :install
+		end
+
+		package "libapache2-mod-php" do
+		  action :install
+		end
+
+
+	Upload cookbook to hosted chef using CLI
+		knife upload cookbook cookbooks/web
+
+7. Gererate App Cookbook
+	chef generate cookbooks cookbooks/app
+
+	Go to google and search receipe 'coockbooks for apache2 ubuntu'
+	Ref: https://www.linode.com/docs/applications/configuration-management/creating-your-first-chef-cookbook/
+
+	Copy following code and paste into recepie file.
+	
+		execute "apt-get update" do
+		  command "apt-get update"
+		end
+
+		package "apache2" do
+		  action :install
+		end
+
+		service "apache2" do
+		  action [:enable, :start]
+		end
+
+	Upload cookbook to hosted chef using CLI
+		knife upload cookbook cookbooks/app
+
+
+Go to hosted chef server and check will found cookbook web and app will be uploaded.
+
+
+8. Now, coonect Chef hosted server to AWS instances to run the web and app configurations.
+Will be using bootstrap for same and aws CLI, run below command
+
+	knife bootstrap 34.220.123.72 --ssh-user ubuntu --sudo --ssh-identity-file C:\Users\Etisalat\Desktop\AWS\chef\chef-repo\.chef\Oregon-Key-Pair.pem --node-name web-cookbook-1 --run-list 'recipe[web::apache-cb]'
+
+	knife bootstrap 54.202.210.76 --ssh-user ubuntu --sudo --ssh-identity-file C:\Users\Etisalat\Desktop\AWS\chef\chef-repo\.chef\Oregon-Key-Pair.pem --node-name app-cookbook-1 --run-list 'recipe[app::php-cb]'
+
+	knife bootstrap 34.215.171.133 --connection-user ubuntu --sudo --ssh-identity-file C:\Users\Etisalat\Desktop\AWS\chef\chef-repo\.chef\Oregon-Key-Pair.pem --node-name app-cookbook-2 --run-list 'recipe[app::php-cb]'
+
+
+
+------------- AWS and DevOps-DevOps-Learning about Configuration Managment Tools- Ansible ---------------
+1. Provision 4 EC2 machine and choose Ubuntu image.
+	User Data:
+	#!/bin/bash
+	sudo su
+	cd
+	apt-get update -y
+	apt-get install python -y
+	
+2. Name all 4 EC2 machine and record private and public ip of each EC2 intances
+	master	3.15.15.27		192.168.1.65
+	web01	3.15.229.74		192.168.1.173
+	web02	3.22.71.176		192.168.1.131
+	app		3.133.109.249	192.168.1.222
+	
+3. Login to all 4 EC2 instances and set hostname of each.
+	sudo su
+	cd
+	hostname [master/web01/web02/app]
+	
+4. Login to master 
+	a)install ansible
+	sudo su
+	cd
+	apt-get update -y
+	apt install ansible
+	
+	b) 
+	cd /etc/ansible/
+	Take back up of ansible.cfg (cp ansible.cfg ansible.cfg.backup)
+	Take back up of hosts (cp hosts hosts.backup)
+	vi hosts and [webservers] and [appservers] public IP
+	
+	ansible -m ping webservers
+		Error: Failed to connect to the host via ssh:  Permission denied (publickey).
+	ansible -m ping appservers
+		Error: Failed to connect to the host via ssh:  Permission denied (publickey).
+		
+	Try ssh webservers and appservers
+	ssh 192.168.1.173
+	ssh 192.168.1.131
+	ssh 192.168.1.222
+		Error: Permission denied (publickey).
+		
+		
+	Generate ssh-key for handshake.
+	Command: ssh-keygen
+	
+	cd /root/.ssh/
+	copy id_rsa.pub public key and paste into authorized_keys file into webservers and appservers
+	
+	
+	ansible -m ping webservers
+		192.168.1.131 | SUCCESS => {
+			"changed": false,
+			"ping": "pong"
+		}
+		192.168.1.173 | SUCCESS => {
+			"changed": false,
+			"ping": "pong"
+		}
+
+		
+	ansible -m ping appservers
+		192.168.1.222 | SUCCESS => {
+			"changed": false,
+			"ping": "pong"
+		}
+
+	
+	root@master:~# ansible -m ping all
+		x
+		192.168.1.131 | SUCCESS => {
+			"changed": false,
+			"ping": "pong"
+		}
+		192.168.1.173 | SUCCESS => {
+			"changed": false,
+			"ping": "pong"
+		}
+
+	
+	Now create the playbook file and write the configurations.
+	vi apache-pb.yml
+	
+	---
+	- hosts: <name of the webservers>
+	  tasks:
+		- name: Installs apache on Web server
+		  apt: pkg=apache2 state=installed update_cache=true
+		  notify:
+			- start apache2
+
+	  handlers:
+		- name: start apache2
+		  service: name=apache2 state=started
+		  
+		  
+	save and run the below command to install as per playbook configurations
+	ansible-playbook -s apache-pb.yml
+	
+	
+
+		
+---------------- 29-Beta-AWS and DevOps-DevOps-Learning about Containerization Using Dockers ----------------
+Steps to be followed
+1.Create an account at hub.docker.com with docker-id
+2.Create a repository under the docker hub account
+3.Create a github repository otherwise follow directly step 4.
+4.Use the github https://github.com/rampravesh0808/AWSDockerDemoApp
+5.AWSDockerDemoApp contains Dockerfile under root directory and has the following commands to Dockerfile
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Contents of Dockerfile
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+FROM ubuntu:12.04
+# Install dependencies
+RUN apt-get update -y
+RUN apt-get install -y git curl apache2 php5 libapache2-mod-php5 php5-mcrypt php5-mysql
+# Install app
+RUN rm -rf /var/www/*
+ADD src /var/www
+# Configure apache
+RUN a2enmod rewrite
+RUN chown -R www-data:www-data /var/www
+ENV APACHE_RUN_USER www-data
+ENV APACHE_RUN_GROUP www-data
+ENV APACHE_LOG_DIR /var/log/apache2
+EXPOSE 80
+CMD ["/usr/sbin/apache2", "-D",  "FOREGROUND"]
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+====================================
+Docker creation on AWS EC2 instances
+====================================
+6.Create an EC2 instances, which play role as Host Instance for running Docker on it
+
+8. Connect and loging to EC2 Docker Machince and Run the following commands
+sudo su
+yum update -y
+yum install docker -y
+service docker start
+usermod -a -G docker ec2-user 		//add ec2-user to group docker ,to execute commands on behalf of ec2-user
+docker info
+
+yum install git -y
+git clone https://github.com/rampravesh0808/AWSDockerDemoApp.git
+cd AWSDockerDemoApp
+docker build -t macrpravesh08/aws_dhub:latest .
+docker images    //listing the docker
+docker push macrpravesh08/aws_dhub:latest
+	if Permission denied because, required to login into Docker Hub account on Docker Server(EC2). then run below command 
+		docker login
+		
+		docker push macrpravesh08/aws_dhub:latest
+				
+docker run -p 80:80 macrpravesh08/aws_dhub:latest
+
+10.		Open browser and type <<Public Ip of EC2>>:80
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+11.		For Newer Committs from source, we need to build the system for every commit=====> push from local folder(git repository-AWSDockerDemoApp)
+
+
+
+--------------- Good Job ----------------
+
+
+=========================================================================================================
+13.AUTOMATED BUILD:
+=========================================================================================================
+please run the following commands to remove all containers
+		$ docker container ls							//listing the cotinaers
+		$ docker kill $(docker ps -q)             	//stop all containers:
+		$ docker rm $(docker ps -a -q)				//remove all containers
+		$ docker rmi $(docker images -q)				//Remove -Images
+
+14.		For Automated build Using the docker hub account, please follow the below mentioned steps
+14.a.	Click "Create Automated build" ====>"Create Auto build,GITHUB"
+14.b.	Link your GITHUB account,and sync with github repo <<githubrepo-manualbuild>>
+
+15.		Please make changes to src folder(application content),GITHUB reads the changes to Application content
+16. 	Every commit to master git repo will trigger the docker to build a new images,and run commands in Automated build (13) to remove containers
+		docker pull rsharathsaee/githubrepo-manualbuild
+		docker run -p 80:80 rsharathsaee/githubrepo-manualbuild
+	
+	
+	
+	
+
+		
+
+	
+	
+	
